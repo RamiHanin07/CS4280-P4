@@ -10,6 +10,36 @@
 #include <string>
 
 const char SPACES = ' ';
+using namespace std;
+vector<string> identifiers;
+
+bool insert(string ident){
+    bool alreadyIn = false;
+    for(int i = 0; i < identifiers.size(); i++){
+        if(identifiers[i] == ident){
+            alreadyIn = true;
+            cout << "Identifier: " << ident <<" is already accounted for" << endl;
+        }
+    }
+
+    if(alreadyIn == false){
+        identifiers.push_back(ident);
+    }
+    return alreadyIn;
+}
+
+bool verify(string ident){
+    bool alreadyIn = false;
+    for(int i = 0; i < identifiers.size(); i++){
+        if(identifiers[i] == ident){
+            alreadyIn = true;
+        }
+    }
+    if(alreadyIn == false){
+        cout << "Identifier: " << ident << " has not been declared" << endl;
+    }
+    return alreadyIn;
+}
 
 void parse(string fileName){
     cout << "parser()" << endl;
@@ -41,6 +71,10 @@ void parse(string fileName){
 
     //Start actually dealing with the grammar.
     bnfS(tokens, 2);
+    cout << "Symbol Table:" << endl;
+    for(int i = 0; i < identifiers.size(); i++){
+        cout << identifiers[i] << endl;
+    }
 
 }
 void error(Token token, int indents){
@@ -68,6 +102,7 @@ void bnfA(vector <Token> &tokens, int indents){
     }
     if(tokens[0].tokenID == "alphaTK"){
         cout << string(indents, SPACES) << "Identifier " << tokens[0].tokenInstance << endl;
+        insert(tokens[0].tokenInstance);
         tokens.erase(tokens.begin());
     }
     else{
@@ -86,6 +121,10 @@ void bnfM(vector <Token> &tokens, int indents){
             tokens.erase(tokens.begin());
             if(tokens[0].tokenID == "alphaTK"){
                 cout << string(indents, SPACES) << "Identifier " << tokens[0].tokenInstance << endl;
+                bool identUse = verify(tokens[0].tokenInstance);
+                if(identUse == false){
+                    cout << tokens[0].tokenInstance << " at line number: " << tokens[0].lineNum << endl;
+                }
                 tokens.erase(tokens.begin());
                 indents+2;
                 bnfT(tokens, indents);
@@ -275,6 +314,10 @@ bool bnfJ(vector <Token> &tokens, int indents){
 
     if(tokens[0].tokenID == "alphaTK"){
         cout << string(indents, SPACES) << "Identifier " << tokens[0].tokenInstance << endl;
+        bool identUse = verify(tokens[0].tokenInstance);
+         if(identUse == false){
+            cout << tokens[0].tokenInstance << " at line number: " << tokens[0].lineNum << endl;
+        }
         tokens.erase(tokens.begin());
     }
     else{
@@ -334,6 +377,10 @@ bool bnfK(vector <Token> &tokens, int indents){
             tokens.erase(tokens.begin());
             if(tokens[0].tokenID == "alphaTK"){
                 cout << string(indents, SPACES) << "Identifier " << tokens[0].tokenInstance << endl;
+                bool identUse = verify(tokens[0].tokenInstance);
+                if(identUse == false){
+                    cout << tokens[0].tokenInstance << " at line number: " << tokens[0].lineNum << endl;
+                }
                 tokens.erase(tokens.begin());
                 if(tokens[0].tokenID == "keywordTK"){
                     if(tokens[0].tokenInstance == "Show"){
@@ -341,6 +388,10 @@ bool bnfK(vector <Token> &tokens, int indents){
                         tokens.erase(tokens.begin());
                         if(tokens[0].tokenID == "alphaTK"){
                             cout << string(indents, SPACES) << "Identifier " << tokens[0].tokenInstance << endl;
+                            identUse = verify(tokens[0].tokenInstance);
+                             if(identUse == false){
+                                cout << tokens[0].tokenInstance << " at line number: " << tokens[0].lineNum << endl;
+                            }
                             tokens.erase(tokens.begin());
                         }
                         else{
@@ -383,6 +434,10 @@ bool bnfL(vector <Token> &tokens, int indents){
             tokens.erase(tokens.begin());
             if(tokens[0].tokenID == "alphaTK"){
                 cout << string(indents, SPACES) << "Identifier " << tokens[0].tokenInstance << endl;
+                bool identUse = verify(tokens[0].tokenInstance);
+                if(identUse == false){
+                    cout << tokens[0].tokenInstance << " at line number: " << tokens[0].lineNum << endl;
+                }
                 tokens.erase(tokens.begin());
             }
             else{
@@ -426,6 +481,10 @@ bool bnfE(vector <Token> &tokens, int indents){
     }
     if(tokens[0].tokenID == "alphaTK"){
         cout << string(indents, SPACES) << "Identifier " << tokens[0].tokenInstance << endl;
+        bool identUse = verify(tokens[0].tokenInstance);
+        if(identUse == false){
+            cout << tokens[0].tokenInstance << " at line number: " << tokens[0].lineNum << endl;
+        }
         tokens.erase(tokens.begin());
     }
     else{
@@ -530,7 +589,7 @@ void bnfB(vector <Token> &tokens, int indents){
     }
     else{
         indents+2;
-        cout << string(indents, SPACES) << "inside bnfD check" << endl;
+        //cout << string(indents, SPACES) << "inside bnfD check" << endl;
         Token emptyCheck = Token(tokens[0].tokenID, tokens[0].tokenInstance, tokens[0].lineNum);
         dResult = bnfD(tokens, indents);
         if(dResult == false){
@@ -620,6 +679,7 @@ void bnfS(vector <Token> &tokens, int indents){
 
     if(tokens[0].tokenID == "alphaTK"){
         cout << string(indents, SPACES) << "Identifier " << tokens[0].tokenInstance << endl;
+        insert(tokens[0].tokenInstance);
         tokens.erase(tokens.begin());
     }
     else{
@@ -644,6 +704,10 @@ void bnfS(vector <Token> &tokens, int indents){
 
     if(tokens[0].tokenID == "alphaTK"){
         cout << string(indents, SPACES) << "Identifier " << tokens[0].tokenInstance << endl;
+        bool identUse = verify(tokens[0].tokenInstance);
+         if(identUse == false){
+            cout << tokens[0].tokenInstance << " at line number: " << tokens[0].lineNum << endl;
+        }
         tokens.erase(tokens.begin());
     }
     else{
@@ -771,6 +835,10 @@ void bnfZ(vector <Token> &tokens, int indents){
         cout << string(indents-2, SPACES) << "Z" << endl;
         if(tokens[0].tokenID == "alphaTK"){
             cout << string(indents, SPACES) << "Identifier " << tokens[0].tokenInstance << endl;
+            bool identUse = verify(tokens[0].tokenInstance);
+            if(identUse == false){
+                cout << tokens[0].tokenInstance << " at line number: " << tokens[0].lineNum << endl;
+            }
             tokens.erase(tokens.begin());
         }
         else if(tokens[0].tokenID == "digitTK"){
