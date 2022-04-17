@@ -1,0 +1,6 @@
+Name prog3
+     Spot prog3
+     Place
+Name id1 . Here 2 There
+. Show id1 Home
+Show prog3

@@ -1,0 +1,6 @@
+Name prog1
+Spot prog1
+Place
+Name prog2
+. { If prog3 << 30 + 20 Show prog1 }
+.
