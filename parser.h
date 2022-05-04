@@ -28,7 +28,7 @@ bool bnfD(vector<Token> &tokens, int indents);
 
 bool bnfG(vector<Token> &tokens, int indents);
 
-void bnfT(vector<Token> &tokens, int indents);
+string bnfT(vector<Token> &tokens, int indents);
 
 bool bnfV(vector<Token> &tokens, int indents);
 
@@ -40,7 +40,7 @@ bool bnfK(vector<Token> &tokens, int indents);
 
 bool bnfL(vector<Token> &tokens, int indents);
 
-void bnfZ(vector<Token> &tokens, int indents);
+string bnfZ(vector<Token> &tokens, int indents);
 
 bool bnfF(vector<Token> &tokens, int indents);
 

@@ -12,6 +12,11 @@
 const char SPACES = ' ';
 using namespace std;
 vector<string> identifiers;
+vector<string> tempIdents;
+vector<string> repeats;
+vector<string> dones;
+ofstream fileOut;
+string OUTPUT = "output.asm";
 
 bool insert(string ident){
     bool alreadyIn = false;
@@ -72,9 +77,15 @@ void parse(string fileName){
     //Start actually dealing with the grammar.
     bnfS(tokens, 2);
     cout << "Symbol Table:" << endl;
+    fileOut.open(OUTPUT, ios::app);
     for(int i = 0; i < identifiers.size(); i++){
         cout << identifiers[i] << endl;
+        fileOut << identifiers[i] << " 0" << endl;
     }
+    for(int i = 0; i < tempIdents.size(); i++){
+        fileOut << tempIdents[i] << i+1 << " 0" << endl;
+    }
+    fileOut.close();
 
 }
 void error(Token token, int indents){
@@ -87,6 +98,9 @@ void bnfA(vector <Token> &tokens, int indents){
     if(tokens[0].tokenID == "keywordTK"){
         if(tokens[0].tokenInstance == "Name"){
             cout << string(indents, SPACES) << tokens[0].tokenInstance << endl;
+            fileOut.open(OUTPUT, ios::app);
+            fileOut << "LOAD 0" << endl;
+            fileOut.close();
             tokens.erase(tokens.begin());
         }
         else{
@@ -103,6 +117,9 @@ void bnfA(vector <Token> &tokens, int indents){
     if(tokens[0].tokenID == "alphaTK"){
         cout << string(indents, SPACES) << "Identifier " << tokens[0].tokenInstance << endl;
         insert(tokens[0].tokenInstance);
+        fileOut.open(OUTPUT, ios::app);
+        fileOut << "STORE " << tokens[0].tokenInstance << endl;
+        fileOut.close();
         tokens.erase(tokens.begin());
     }
     else{
@@ -115,6 +132,8 @@ void bnfA(vector <Token> &tokens, int indents){
 }
 void bnfM(vector <Token> &tokens, int indents){
     cout << string(indents-2, SPACES) << "M" << endl;
+    string repeat;
+    string tempIdent;
     if(tokens[0].tokenID == "keywordTK"){
         if(tokens[0].tokenInstance == "If"){
             cout << string(indents, SPACES) << tokens[0].tokenInstance << endl;
@@ -125,15 +144,27 @@ void bnfM(vector <Token> &tokens, int indents){
                 if(identUse == false){
                     cout << tokens[0].tokenInstance << " at line number: " << tokens[0].lineNum << endl;
                 }
+                tempIdent = tokens[0].tokenInstance;
                 tokens.erase(tokens.begin());
                 indents+2;
-                bnfT(tokens, indents);
+                string repeat = bnfT(tokens, indents);
                 bnfW(tokens, indents);
+                tempIdents.push_back("T");
+                int tempVarLoc = tempIdents.size()-1;
+                fileOut.open(OUTPUT, ios::app);
+                fileOut << "STORE " << tempIdents[tempVarLoc] << tempVarLoc+1 << endl;
+                fileOut << "LOAD " << tempIdent << endl;
+                fileOut << "SUB " <<tempIdents[tempVarLoc] << tempVarLoc+1 << endl;
+                fileOut << repeat << endl;
+                fileOut.close();
                 bool dResult = bnfD(tokens, indents);
                 if(dResult == false){
                     error(tokens[0], indents);
                     return;
                 }
+                fileOut.open(OUTPUT, ios::app);
+                fileOut << "Repeat1: NOOP" << endl;
+                fileOut.close();
                 indents-2;
                 if(tokens[0].tokenID == "operatorTK"){
                     if(tokens[0].tokenInstance == "}"){
@@ -163,11 +194,29 @@ void bnfM(vector <Token> &tokens, int indents){
                 if(tokens[0].tokenInstance == "Again"){
                     cout << string(indents, SPACES) << tokens[0].tokenInstance << endl;
                     tokens.erase(tokens.begin());
+                    fileOut.open(OUTPUT, ios::app);
+                    tempIdents.push_back("T");
+                    int tempVarLoc = tempIdents.size()-1;
+                    fileOut << "LOAD 0" << endl;
+                    fileOut << "STORE " << tempIdents[tempVarLoc] << tempVarLoc+1 << endl;
+                    fileOut << "Repeat1: NOOP" << endl;
+                    fileOut.close();
+
+                    
 
                     indents+2;
-                    //bnfD(tokens,indents);
-                    //bnfT(tokens, indents);
-                    //bnfW(tokens, indents);
+                    //Choosing from the many
+                    bnfD(tokens,indents);
+                    //Less than or greater than sign
+                    string repeat = bnfT(tokens, indents);
+                    //Operation
+                    bnfW(tokens, indents);
+                    tempIdents.push_back("T");
+                    int tempVarLoc2 = tempIdents.size()-1;
+                    fileOut.open(OUTPUT, ios::app);
+                    fileOut << "STORE " << tempIdents[tempVarLoc2] << tempVarLoc2+1 << endl;
+                    fileOut << repeat << endl;
+                    fileOut.close();
                     indents-2;
                     if(tokens[0].tokenID == "operatorTK"){
                         if(tokens[0].tokenInstance == "}"){
@@ -229,6 +278,9 @@ bool bnfG(vector <Token> &tokens, int indents){
     if(tokens[0].tokenID == "keywordTK"){
         if(tokens[0].tokenInstance == "Here"){
             cout << string(indents, SPACES) << tokens[0].tokenInstance << endl;
+            fileOut.open(OUTPUT, ios::app);
+            fileOut << "LOAD ";
+            fileOut.close();
             tokens.erase(tokens.begin());
             worked = true;
         }
@@ -244,6 +296,9 @@ bool bnfG(vector <Token> &tokens, int indents){
     }
     if(tokens[0].tokenID == "digitTK"){
         cout << string(indents, SPACES) << "Number " << tokens[0].tokenInstance << endl;
+        fileOut.open(OUTPUT, ios::app);
+        fileOut << tokens[0].tokenInstance << endl;
+        fileOut.close();
         tokens.erase(tokens.begin());
     }
     else{
@@ -253,6 +308,21 @@ bool bnfG(vector <Token> &tokens, int indents){
     if(tokens[0].tokenID == "keywordTK"){
         if(tokens[0].tokenInstance == "There"){
             cout << string(indents, SPACES) << tokens[0].tokenInstance << endl;
+            fileOut.open(OUTPUT, ios::app);
+            tempIdents.push_back("T");
+            int tempVarLoc = tempIdents.size()-1;
+            fileOut << "STORE " << tempIdents[tempVarLoc] << tempVarLoc+1 << endl;
+            dones.push_back("Done");
+            int tempDoneLoc = dones.size()-1;
+            fileOut << "BRZNEG " << dones[tempDoneLoc] << tempDoneLoc+1 << endl;
+            repeats.push_back("Repeat");
+            int tempRepeatLoc = repeats.size()-1;
+            fileOut << repeats[tempRepeatLoc] << tempRepeatLoc+1 << ": WRITE " << tempIdents[tempVarLoc] << tempVarLoc+1 << endl;
+            fileOut << "SUB 1" << endl;
+            fileOut << "BRPOS " << repeats[tempRepeatLoc] << tempRepeatLoc+1 << endl;
+            fileOut << dones[tempDoneLoc] << tempDoneLoc+1 << ": NOOP" << endl;
+            fileOut.close();
+            //tempIdents.erase(tempIdents.begin()+tempVarLoc);
             tokens.erase(tokens.begin());
         }
         else{
@@ -283,6 +353,7 @@ void bnfC(vector < Token> &tokens, int indents){
 
 bool bnfH(vector <Token> &tokens, int indents){
     bool worked = false;
+    string zOut;
     cout << string(indents-2, SPACES) << "H" << endl;
     if(tokens[0].tokenID == "operatorTK"){
         if(tokens[0].tokenInstance == "/"){
@@ -290,7 +361,14 @@ bool bnfH(vector <Token> &tokens, int indents){
             tokens.erase(tokens.begin());
             worked = true;
             indents+2;
-            bnfZ(tokens, indents);
+            zOut = bnfZ(tokens, indents);
+            fileOut.open(OUTPUT, ios::app);
+            fileOut << "LOAD " << zOut << endl;
+            fileOut << "SUB 1" << endl;
+            if(isalpha(zOut[0])){
+                fileOut << "STORE " << zOut << endl;
+            }
+            fileOut.close();
         }
     }
     return worked;
@@ -298,11 +376,16 @@ bool bnfH(vector <Token> &tokens, int indents){
 
 bool bnfJ(vector <Token> &tokens, int indents){
     bool worked = false;
+    string tempAssign;
     if(tokens[0].tokenID == "keywordTK"){
         if(tokens[0].tokenInstance == "Assign"){
             cout << string(indents-2, SPACES) << "J" << endl;
             worked = true;
             cout << string(indents, SPACES) << tokens[0].tokenInstance << endl;
+            fileOut.open(OUTPUT, ios::app);
+            //fileOut << "ASSIGNING" << endl;
+            fileOut << "LOAD ";
+            fileOut.close();
             tokens.erase(tokens.begin());
         }
         else{
@@ -318,6 +401,10 @@ bool bnfJ(vector <Token> &tokens, int indents){
          if(identUse == false){
             cout << tokens[0].tokenInstance << " at line number: " << tokens[0].lineNum << endl;
         }
+        fileOut.open(OUTPUT, ios::app);
+        fileOut << tokens[0].tokenInstance << endl;
+        fileOut.close();
+        tempAssign = tokens[0].tokenInstance;
         tokens.erase(tokens.begin());
     }
     else{
@@ -325,8 +412,14 @@ bool bnfJ(vector <Token> &tokens, int indents){
         return worked;
     }
     indents+2;
-    bool dResult = bnfD(tokens, indents);
-    if(dResult == false){
+    bool HResult = bnfH(tokens, indents);
+    bool LResult = bnfL(tokens, indents);
+    fileOut.open(OUTPUT, ios::app);
+    fileOut << "STORE " << tempAssign << endl;
+    fileOut.close();
+
+
+    if(!HResult && !LResult){
         error(tokens[0], indents);
         return worked;
     }
@@ -341,16 +434,29 @@ bool bnfK(vector <Token> &tokens, int indents){
             cout << string(indents-2, SPACES) << "K" << endl;
             worked = true;
             cout << string(indents, SPACES) << tokens[0].tokenInstance << endl;
+            fileOut.open(OUTPUT, ios::app);
+            fileOut << "LOAD ";
+            fileOut.close();
             tokens.erase(tokens.begin());
             if(tokens[0].tokenID == "digitTK"){
                 cout << string(indents, SPACES) << "Number " << tokens[0].tokenInstance << endl;
+                //insert(tokens[0].tokenInstance);
+                fileOut.open(OUTPUT, ios::app);
+                fileOut << tokens[0].tokenInstance << endl;
+                fileOut.close();
                 tokens.erase(tokens.begin());
                 if(tokens[0].tokenID == "keywordTK"){
                     if(tokens[0].tokenInstance == "Show"){
                         cout << string(indents, SPACES) << tokens[0].tokenInstance << endl;
+                        fileOut.open(OUTPUT, ios::app);
+                        fileOut << "WRITE ";
+                        fileOut.close();
                         tokens.erase(tokens.begin());
                         if(tokens[0].tokenID == "digitTK"){
                             cout << string(indents, SPACES) << "Number " << tokens[0].tokenInstance << endl;
+                            fileOut.open(OUTPUT,ios::app);
+                            fileOut << tokens[0].tokenInstance << endl;
+                            fileOut.close();
                             tokens.erase(tokens.begin());
                         }
                         else{
@@ -374,17 +480,26 @@ bool bnfK(vector <Token> &tokens, int indents){
             cout << string(indents-2, SPACES) << "K" << endl;
             worked = true;
             cout << string(indents, SPACES) << tokens[0].tokenInstance << endl;
+            fileOut.open(OUTPUT, ios::app);
+            fileOut << "LOAD ";
+            fileOut.close();
             tokens.erase(tokens.begin());
             if(tokens[0].tokenID == "alphaTK"){
                 cout << string(indents, SPACES) << "Identifier " << tokens[0].tokenInstance << endl;
                 bool identUse = verify(tokens[0].tokenInstance);
                 if(identUse == false){
                     cout << tokens[0].tokenInstance << " at line number: " << tokens[0].lineNum << endl;
-                }
+                }  
+                fileOut.open(OUTPUT, ios::app);
+                fileOut << tokens[0].tokenInstance << endl;
+                fileOut.close();
                 tokens.erase(tokens.begin());
                 if(tokens[0].tokenID == "keywordTK"){
                     if(tokens[0].tokenInstance == "Show"){
                         cout << string(indents, SPACES) << tokens[0].tokenInstance << endl;
+                        fileOut.open(OUTPUT, ios::app);
+                        fileOut << "WRITE ";
+                        fileOut.close();
                         tokens.erase(tokens.begin());
                         if(tokens[0].tokenID == "alphaTK"){
                             cout << string(indents, SPACES) << "Identifier " << tokens[0].tokenInstance << endl;
@@ -392,6 +507,9 @@ bool bnfK(vector <Token> &tokens, int indents){
                              if(identUse == false){
                                 cout << tokens[0].tokenInstance << " at line number: " << tokens[0].lineNum << endl;
                             }
+                            fileOut.open(OUTPUT, ios::app);
+                            fileOut << tokens[0].tokenInstance << endl;
+                            fileOut.close();
                             tokens.erase(tokens.begin());
                         }
                         else{
@@ -438,6 +556,12 @@ bool bnfL(vector <Token> &tokens, int indents){
                 if(identUse == false){
                     cout << tokens[0].tokenInstance << " at line number: " << tokens[0].lineNum << endl;
                 }
+                fileOut.open(OUTPUT, ios::app);
+                fileOut << "LOAD " << tokens[0].tokenInstance << endl;
+                fileOut << "MULT -1" << endl;
+                fileOut << "STORE " << tokens[0].tokenInstance << endl;
+                fileOut << "LOAD " << tokens[0].tokenInstance << endl;
+                fileOut.close();
                 tokens.erase(tokens.begin());
             }
             else{
@@ -466,6 +590,9 @@ bool bnfE(vector <Token> &tokens, int indents){
             cout << string(indents-2, SPACES) << "E" << endl;
             worked = true;
             cout << string(indents, SPACES) << tokens[0].tokenInstance << endl;
+            fileOut.open(OUTPUT, ios::app);
+            fileOut << "WRITE ";
+            fileOut.close();
             tokens.erase(tokens.begin());
         }
         else{
@@ -485,6 +612,9 @@ bool bnfE(vector <Token> &tokens, int indents){
         if(identUse == false){
             cout << tokens[0].tokenInstance << " at line number: " << tokens[0].lineNum << endl;
         }
+        fileOut.open(OUTPUT, ios::app);
+        fileOut << tokens[0].tokenInstance << endl;
+        fileOut.close();
         tokens.erase(tokens.begin());
     }
     else{
@@ -663,6 +793,9 @@ void bnfS(vector <Token> &tokens, int indents){
     if(tokens[0].tokenID == "keywordTK"){
         if(tokens[0].tokenInstance == "Name"){
             cout << string(indents, SPACES) << tokens[0].tokenInstance << endl;
+            fileOut.open(OUTPUT);
+            fileOut << "LOAD 0" << endl;
+            fileOut.close();
             tokens.erase(tokens.begin());
         }
         else{
@@ -680,6 +813,9 @@ void bnfS(vector <Token> &tokens, int indents){
     if(tokens[0].tokenID == "alphaTK"){
         cout << string(indents, SPACES) << "Identifier " << tokens[0].tokenInstance << endl;
         insert(tokens[0].tokenInstance);
+        fileOut.open(OUTPUT, ios::app);
+        fileOut << "STORE " << tokens[0].tokenInstance << endl;
+        fileOut.close();
         tokens.erase(tokens.begin());
     }
     else{
@@ -691,6 +827,9 @@ void bnfS(vector <Token> &tokens, int indents){
     if(tokens[0].tokenID == "keywordTK"){
         if(tokens[0].tokenInstance == "Spot"){
             cout << string(indents, SPACES) << tokens[0].tokenInstance << endl;
+            fileOut.open(OUTPUT, ios::app);
+            fileOut << "READ ";
+            fileOut.close();
             tokens.erase(tokens.begin());
         }
         else{
@@ -704,10 +843,10 @@ void bnfS(vector <Token> &tokens, int indents){
 
     if(tokens[0].tokenID == "alphaTK"){
         cout << string(indents, SPACES) << "Identifier " << tokens[0].tokenInstance << endl;
-        bool identUse = verify(tokens[0].tokenInstance);
-         if(identUse == false){
-            cout << tokens[0].tokenInstance << " at line number: " << tokens[0].lineNum << endl;
-        }
+        insert(tokens[0].tokenInstance);
+        fileOut.open(OUTPUT, ios::app);
+        fileOut << tokens[0].tokenInstance << endl;
+        fileOut.close();
         tokens.erase(tokens.begin());
     }
     else{
@@ -725,6 +864,9 @@ void bnfS(vector <Token> &tokens, int indents){
 void bnfY(vector <Token> &tokens, int indents){
     if(tokens[0].tokenID == "eofTK"){
         cout << string(indents, SPACES) << tokens[0].tokenInstance << endl;
+        fileOut.open(OUTPUT, ios::app);
+        fileOut << "STOP" << endl;
+        fileOut.close();
         tokens.erase(tokens.begin());
     }
     else{
@@ -732,16 +874,18 @@ void bnfY(vector <Token> &tokens, int indents){
     }
     return;
 }
-void bnfT(vector <Token> &tokens, int indents){
+string bnfT(vector <Token> &tokens, int indents){
     cout << string(indents-2, SPACES) << "T" << endl;
     if(tokens[0].tokenID == "operatorTK"){
         if(tokens[0].tokenInstance == "<<"){
             cout << string(indents, SPACES) << tokens[0].tokenInstance << endl;
             tokens.erase(tokens.begin());
+            return "BRNEG Repeat1";
         }
         else if(tokens[0].tokenInstance == "<-"){
             cout << string(indents, SPACES) << tokens[0].tokenInstance << endl;
             tokens.erase(tokens.begin());
+             return "BRZPOS Repeat1";
         }
         else{
             error(tokens[0], indents);
@@ -749,7 +893,6 @@ void bnfT(vector <Token> &tokens, int indents){
     }
     else{
         error(tokens[0], indents);
-        return;
     }
 }
 
@@ -760,18 +903,27 @@ bool bnfV(vector <Token> &tokens, int indents){
             cout << string(indents-2, SPACES) << "V" << endl;
             worked = true;
             cout << string(indents, SPACES) << tokens[0].tokenInstance << endl;
+            fileOut.open(OUTPUT, ios::app);
+            fileOut << "ADD ";
+            fileOut.close();
             tokens.erase(tokens.begin());
         }
         else if(tokens[0].tokenInstance == "%"){
             cout << string(indents-2, SPACES) << "V" << endl;
             worked = true;
             cout << string(indents, SPACES) << tokens[0].tokenInstance << endl;
+            fileOut.open(OUTPUT, ios::app);
+            fileOut << "DIV ";
+            fileOut.close();
             tokens.erase(tokens.begin());
         }
         else if(tokens[0].tokenInstance == "&"){
             cout << string(indents-2, SPACES) << "V" << endl;
             worked = true;
             cout << string(indents, SPACES) << tokens[0].tokenInstance << endl;
+            fileOut.open(OUTPUT, ios::app);
+            fileOut << "MULT ";
+            fileOut.close();
             tokens.erase(tokens.begin());
         }
         else{
@@ -791,6 +943,9 @@ void bnfN(vector <Token> &tokens, int indents){
         if(tokens[0].tokenID == "digitTK"){
             cout << string(indents-2, SPACES) << "N" << endl;
             cout << string(indents, SPACES) << "Number " << tokens[0].tokenInstance << endl;
+            fileOut.open(OUTPUT, ios::app);
+            fileOut << tokens[0].tokenInstance << endl;
+            fileOut.close();
             tokens.erase(tokens.begin());
         }
         else{
@@ -822,6 +977,9 @@ void bnfW(vector <Token> &tokens, int indents){
     cout << string(indents-2, SPACES) << "W" << endl;
     if(tokens[0].tokenID == "digitTK"){
         cout << string(indents, SPACES) << "Number " << tokens[0].tokenInstance << endl;
+        fileOut.open(OUTPUT, ios::app);
+        fileOut << "LOAD " << tokens[0].tokenInstance << endl;
+        fileOut.close();
         tokens.erase(tokens.begin());
     }
     else{
@@ -831,7 +989,7 @@ void bnfW(vector <Token> &tokens, int indents){
     bnfN(tokens, indents);
 }
 
-void bnfZ(vector <Token> &tokens, int indents){
+string bnfZ(vector <Token> &tokens, int indents){
         cout << string(indents-2, SPACES) << "Z" << endl;
         if(tokens[0].tokenID == "alphaTK"){
             cout << string(indents, SPACES) << "Identifier " << tokens[0].tokenInstance << endl;
@@ -839,15 +997,18 @@ void bnfZ(vector <Token> &tokens, int indents){
             if(identUse == false){
                 cout << tokens[0].tokenInstance << " at line number: " << tokens[0].lineNum << endl;
             }
+            string tempIdent = tokens[0].tokenInstance;
             tokens.erase(tokens.begin());
+            return tempIdent;
         }
         else if(tokens[0].tokenID == "digitTK"){
+            string num = tokens[0].tokenInstance;
             cout << string(indents, SPACES) << "Number " << tokens[0].tokenInstance << endl;
             tokens.erase(tokens.begin());
+            return num;
         }
         else{
             error(tokens[0], indents);
-            return;
         }
 }
 

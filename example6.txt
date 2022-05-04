@@ -3,7 +3,7 @@ Spot prog5
 Place
 Name zd2
 .
-{ Do Again Flip prog4 << 9 + 1 }
+{ Do Again Move prog4 Show prog5 <- 9 + 1 }
 .
 Assign prog4 Flip prog5
 Home
